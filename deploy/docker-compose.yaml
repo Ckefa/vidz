@@ -1,0 +1,11 @@
+version: '3'
+services:
+  vidz:
+    image: vidz_img
+    container_name: vidz0
+    ports:
+      - "5000:5000"
+    # volumes:
+      # - host_volume:container_volume
+    # environment:
+      # - env_var=env_value

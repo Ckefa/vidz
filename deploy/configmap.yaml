@@ -1,0 +1,47 @@
+# https://kubernetes.io/docs/concepts/configuration/configmap/
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-config
+data:
+  mariadb_host: mariadb.default.svc.cluster.local
+  mariadb_name: vidz
+---
+# https://kubernetes.io/docs/concepts/configuration/configmap/
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  app_host: vidz
+  nginx.conf: |
+    events {}
+
+    http{
+      server{
+        listen 80;
+
+        location / {
+          proxy_pass http://vidz;
+        }
+      }
+    }
+---
+# https://kubernetes.io/docs/concepts/configuration/configmap/
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-init
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS vidz;
+
+    USE vidz;
+
+    CREATE TABLE IF NOT EXISTS user(
+      id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255)
+    );
+---
+
+

@@ -1,0 +1,92 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vidz
+  namespace: default
+  labels:
+    app: vidz
+spec:
+  selector:
+    matchLabels:
+      app: vidz
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container:  vidz
+      labels:
+        app: vidz
+    spec:
+      # initContainers:
+        # Init containers are exactly like regular containers, except:
+          # - Init containers always run to completion.
+          # - Each init container must complete successfully before the next one starts.
+      containers:
+      - name: vidz
+        image: ckefa/vidz_img:2.1
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: MYSQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: vidz
+              key: mysql_db_host
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret 
+              key: mysql_user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret 
+              key: mysql_passwd
+        - name: MYSQL_DB
+          valueFrom:
+            configMapKeyRef:
+              name: vidz
+              key: mysql_db_name
+        ports:
+        - containerPort: 5000
+          name: vidz
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Taipei
+      restartPolicy: Always
+---
+
+# https://kubernetes.io/docs/concepts/services-networking/service/
+apiVersion: v1
+kind: Service
+metadata:
+  name: vidz
+  namespace: default
+spec:
+  selector:
+    app: vidz
+  type: LoadBalancer
+  ports:
+  - name: vidz
+    protocol: TCP
+    port: 80
+    targetPort: 5000
+    nodePort: 30001
+---
+

@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: MYSQL_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: mariadb-config
+                key: mariadb_name
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: mariadb-secret
+                key: mariadb_user
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mariadb-secret
+                key: mariadb_passwd
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mariadb-secret
+                key: mariadb_root_passwd
+        ports:
+          - containerPort: 3306
+        volumeMounts:
+        - name: mariadbinit
+          mountPath: /docker-entrypoint-initdb.d
+        - name: mariadb-storage
+          mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadbinit
+          configMap:
+            name: mariadb-init
+            items:
+              - key: init.sql
+                path: init.sql
+        - name: mariadb-storage 
+          persistentVolumeClaim:
+            claimName: mariadb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+spec:
+  clusterIP: None  # Set to None for headless service (optional)
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: mariadb
+---
